@@ -1,0 +1,9 @@
+define bot toxicity
+  "The comment that is made is toxic. Please change and redo"
+
+define subflow check toxicity
+  $is_blocked = execute toxicity_inspeq
+
+  if $is_blocked
+    bot toxicity
+    stop
