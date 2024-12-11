@@ -1,21 +1,35 @@
 models:
  - type: main
    engine: openai
-   model: gpt-3.5-turbo-instruct
-instructions:
-  - type: general
-    content: |
-      Below is a conversation between a user and a bot called the ABC Bot.
-      The bot is designed to answer employee questions about the ABC Company.
-      The bot is knowledgeable about the employee handbook and company policies.
-      If the bot does not know the answer to a question, it truthfully says it does not know.
+   model: gpt-3.5-turbo
+
 rails:
   input:
     flows:
-      - self check input
       - check toxicity
   output:
     flows:
-      - self check output
-      - check blocked terms
       - check toxicity
+core:
+  embedding_search_provider:
+    name: default
+    parameters:
+      embedding_engine: openai
+      embedding_model: text-embedding-ada-002
+    cache:
+      enabled: False
+      key_generator: md5
+      store: filesystem
+      store_config: {}
+
+knowledge_base:
+  embedding_search_provider:
+    name: default
+    parameters:
+      embedding_engine: openai
+      embedding_model: text-embedding-ada-002
+    cache:
+      enabled: False
+      key_generator: md5
+      store: filesystem
+      store_config: {}
