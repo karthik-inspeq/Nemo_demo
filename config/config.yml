@@ -12,10 +12,7 @@ instructions:
 rails:
   input:
     flows:
-      - self check input
       - check toxicity
   output:
     flows:
-      - self check output
-      - check blocked terms
       - check toxicity

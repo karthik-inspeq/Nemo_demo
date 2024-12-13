@@ -5,37 +5,50 @@ from nemoguardrails.actions import action
 from inspeq.client import InspeqEval
 load_dotenv()
 
-@action(is_system_action=True)
-async def check_blocked_terms(context: Optional[dict] = None):
-    bot_response = context.get("bot_message")
-
-    # A quick hard-coded list of proprietary terms. You can also read this from a file.
-    proprietary_terms = ["proprietary", "proprietary1", "proprietary2"]
-
-    for term in proprietary_terms:
-        if term in bot_response.lower():
-            return True
-
-    return False
 # mesures toxicity based on inspeq metrics
 @action(is_system_action=True)
 async def toxicity_inspeq(context: Optional[dict] = None):
     bot_response = context.get("bot_message")
-    final_result = inspeq_result(bot_response)
-    if final_result == "FAILED":
-        return True
-
-    return False
+    bot_context = context.get("relevant_chunks")
+    eval_result= inspeq_result(bot_context, bot_response)
+    verdict = False
+    for i in range(len(eval_result["results"])):
+        final_result = eval_result["results"][i]["metric_evaluation_status"]
+        name = eval_result["results"][i]["evaluation_details"]["metric_name"]
+        new_name = name.replace("_EVALUATION", "")
+        if final_result == 'FAILED' and final_result != 'EVAL_FAIL':
+            if new_name == "TOXICITY":
+                verdict = True
+                break
+            elif new_name == "RESPONSE_TONE":
+                verdict = True
+                break
+            elif new_name == "PROMPT_INJECTION":
+                verdict = True
+                break
+            elif new_name == "INSECURE_OUTPUT":
+                verdict = True
+                break
+            elif new_name == "INVISIBLE_TEXT":
+                verdict = True
+                break
+        else:
+            continue
+    return verdict
 # Define toxicity using inspeq metric
-def inspeq_result(response):
+def inspeq_result(context, response):
     metrics_list = [
-        "TOXICITY"
+        "TOXICITY",
+        "PROMPT_INJECTION",
+        "INVISIBLE_TEXT",
+        "INSECURE_OUTPUT"
         ]
-    # prompt = prompt.encode('utf-8').decode('unicode_escape')
+    prompt = os.environ["prompt"]
+    prompt = prompt.encode('utf-8').decode('unicode_escape')
     input_data= [
                 {
-                    "prompt": "string",
-                    "context": "string",
+                    "prompt": prompt,
+                    "context": context,
                     "response":response
                 }
                 ]
@@ -46,5 +59,4 @@ def inspeq_result(response):
             input_data=input_data,
             task_name="nemo"
         )
-    final_result = float(results["results"][0]["evaluation_details"]["actual_value"])
-    return final_result
+    return results
